@@ -2,6 +2,15 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
+def _clear_settings_cache():
+    """Limpa o cache de get_settings antes de cada teste para garantir isolamento."""
+    from assistente_telegram_voz.config import get_settings
+
+    get_settings.cache_clear()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def fake_env(monkeypatch):
     """Injeta variáveis de ambiente falsas para os testes não dependerem do .env real."""
     env = {

@@ -14,6 +14,14 @@ def _req(name: str) -> str:
     return v
 
 
+def _int(name: str, default: int) -> int:
+    raw = os.getenv(name, str(default))
+    try:
+        return int(raw)
+    except ValueError as e:
+        raise ValueError(f"Variável {name} deve ser um inteiro, recebido: {raw!r}") from e
+
+
 @dataclass(frozen=True)
 class Settings:
     telegram_bot_token: str
@@ -49,8 +57,8 @@ def get_settings() -> Settings:
         elevenlabs_model=os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2"),
         rag_dir=os.getenv("RAG_DIR", "rag"),
         chroma_dir=os.getenv("CHROMA_DIR", "chroma_db"),
-        rag_top_k=int(os.getenv("RAG_TOP_K", "4")),
+        rag_top_k=_int("RAG_TOP_K", 4),
         system_prompt_path=os.getenv("SYSTEM_PROMPT_PATH", "prompt/system.md"),
-        history_max_messages=int(os.getenv("HISTORY_MAX_MESSAGES", "10")),
-        max_audio_seconds=int(os.getenv("MAX_AUDIO_SECONDS", "120")),
+        history_max_messages=_int("HISTORY_MAX_MESSAGES", 10),
+        max_audio_seconds=_int("MAX_AUDIO_SECONDS", 120),
     )
