@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+
+# RAG vector store (dados gerados pela ingestão)
+chroma_db/
+
+# Skills locais (superpowers) — não fazem parte do projeto
+skills/
