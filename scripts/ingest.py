@@ -43,21 +43,56 @@ def read_documents(rag_dir: str) -> list[dict]:
     return docs
 
 
+def _batched(seq: list, size: int):
+    """Divide uma lista em lotes de até `size` itens."""
+    for start in range(0, len(seq), size):
+        yield seq[start : start + size]
+
+
+def embed_batch(texts: list[str], model: str, client) -> list[list[float]]:
+    """Gera embeddings para uma lista de textos numa única chamada à API."""
+    resp = client.embeddings.create(model=model, input=texts)
+    return [item.embedding for item in resp.data]
+
+
+EMBED_BATCH_SIZE = 128
+UPSERT_BATCH_SIZE = 512
+
+
 def main() -> None:
     s = get_settings()
     collection = get_collection()
     client = _openai_client()
     documents = read_documents(s.rag_dir)
-    ids, texts, embeddings, metadatas = [], [], [], []
+
+    # Achata todos os documentos em chunks com seus ids e metadados.
+    ids, texts, metadatas = [], [], []
     for doc in documents:
         for i, chunk in enumerate(chunk_text(doc["text"])):
-            emb = client.embeddings.create(model=s.embedding_model, input=chunk).data[0].embedding
             ids.append(f"{doc['source']}#{i}")
             texts.append(chunk)
-            embeddings.append(emb)
             metadatas.append({"source": doc["source"]})
-    if ids:
-        collection.upsert(ids=ids, documents=texts, embeddings=embeddings, metadatas=metadatas)
+
+    if not ids:
+        print("Nenhum chunk para indexar. Verifique a pasta de documentos.")
+        return
+
+    # Embeddings em lote (uma chamada por lote, não por chunk).
+    embeddings: list[list[float]] = []
+    for batch in _batched(texts, EMBED_BATCH_SIZE):
+        embeddings.extend(embed_batch(batch, s.embedding_model, client))
+        print(f"  embeddings gerados: {len(embeddings)}/{len(texts)}")
+
+    # Upsert em lote no ChromaDB.
+    for start in range(0, len(ids), UPSERT_BATCH_SIZE):
+        end = start + UPSERT_BATCH_SIZE
+        collection.upsert(
+            ids=ids[start:end],
+            documents=texts[start:end],
+            embeddings=embeddings[start:end],
+            metadatas=metadatas[start:end],
+        )
+
     print(f"Indexados {len(ids)} chunks de {len(documents)} documentos.")
 
 
