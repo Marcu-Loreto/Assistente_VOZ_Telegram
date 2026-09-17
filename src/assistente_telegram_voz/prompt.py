@@ -3,13 +3,12 @@ from pathlib import Path
 
 from .config import get_settings
 
-PROMPT_PATH = Path(get_settings().system_prompt_path)
-
 
 @lru_cache(maxsize=1)
 def load_system_prompt() -> str:
-    """Lê o system prompt base de PROMPT_PATH (cacheado)."""
-    return PROMPT_PATH.read_text(encoding="utf-8").strip()
+    """Lê o system prompt base do caminho configurado (cacheado)."""
+    path = Path(get_settings().system_prompt_path)
+    return path.read_text(encoding="utf-8").strip()
 
 
 def build_system_prompt(retrieved_chunks: list[str]) -> str:

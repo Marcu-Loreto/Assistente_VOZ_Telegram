@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import tempfile
 
@@ -37,7 +38,8 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     memory: ConversationMemory = ctx.application.bot_data["memory"]
     chat_id = update.effective_chat.id
     await ctx.bot.send_chat_action(chat_id, "typing")
-    reply = process_message(chat_id, update.message.text, memory)
+    # process_message faz I/O de rede síncrono; roda fora do event loop.
+    reply = await asyncio.to_thread(process_message, chat_id, update.message.text, memory)
     await update.message.reply_text(reply)
 
 
@@ -55,15 +57,21 @@ async def handle_voice(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     with tempfile.NamedTemporaryFile(suffix=".ogg", delete=True) as tmp:
         await tg_file.download_to_drive(tmp.name)
         try:
-            user_text = transcribe(tmp.name)
+            user_text = await asyncio.to_thread(transcribe, tmp.name)
         except Exception:
             logger.exception("Falha na transcrição")
             await update.message.reply_text(ERRO_FALLBACK)
             return
 
-    reply = process_message(chat_id, user_text, memory)
+    reply = await asyncio.to_thread(process_message, chat_id, user_text, memory)
+
+    # Se o processamento falhou, não vale gastar TTS narrando o erro: responde texto.
+    if reply == ERRO_FALLBACK:
+        await update.message.reply_text(reply)
+        return
+
     try:
-        audio = synthesize(reply)
+        audio = await asyncio.to_thread(synthesize, reply)
         await update.message.reply_voice(voice=audio)
     except Exception:
         logger.exception("Falha no TTS; caindo para texto")
