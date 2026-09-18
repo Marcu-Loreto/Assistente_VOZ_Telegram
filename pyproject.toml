@@ -15,6 +15,7 @@ dependencies = [
     "python-dotenv>=1.2.3",
     "python-telegram-bot>=22.8",
     "sentence-transformers>=6.0.1",
+    "torch>=2.14.0",
 ]
 
 [project.scripts]
@@ -29,8 +30,19 @@ dev = [
     "pytest>=9.1.1",
 ]
 
-# O torch CPU-only é instalado no Dockerfile (índice CPU do PyTorch), para manter
-# a imagem pequena. Em desenvolvimento local, o torch vem do índice padrão.
+# === PyTorch CPU-only ===
+# O torch do PyPI, no Linux, arrasta ~15 pacotes NVIDIA/CUDA + triton como
+# dependências diretas (marker sys_platform == 'linux'), inflando o ambiente
+# para ~6 GB. Como não usamos GPU (embeddings rodam em CPU), apontamos o torch
+# para o índice CPU-only do PyTorch, cujos wheels "+cpu" não têm essas deps.
+# Isso vale tanto para o dev local quanto para a imagem Docker.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
