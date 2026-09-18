@@ -14,5 +14,9 @@ def transcribe(audio_path: str) -> str:
     """Transcreve um arquivo de áudio para texto usando o modelo de transcrição."""
     s = get_settings()
     with open(audio_path, "rb") as f:
-        resp = _client().audio.transcriptions.create(model=s.transcribe_model, file=f)
+        resp = _client().audio.transcriptions.create(
+            model=s.transcribe_model,
+            file=f,
+            language="pt",
+        )
     return resp.text.strip()

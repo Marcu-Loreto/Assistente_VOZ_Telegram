@@ -19,12 +19,18 @@ def build_system_prompt(retrieved_chunks: list[str]) -> str:
     """
     base = load_system_prompt()
     if not retrieved_chunks:
-        return base
-    contexto = "\n\n".join(f"- {c}" for c in retrieved_chunks)
+        contexto = "(nenhum documento recuperado para esta pergunta)"
+    else:
+        contexto = "\n\n".join(
+            f"[Trecho {i}]\n{c}" for i, c in enumerate(retrieved_chunks, 1)
+        )
     return (
         f"{base}\n\n"
-        "## Material de referência (use para responder)\n"
-        f"{contexto}\n\n"
-        "Responda usando apenas o material acima. "
-        "Se a resposta não estiver nele, diga que não tem essa informação."
+        "===== CONTEXT_RAG =====\n"
+        "A seguir estão os trechos recuperados da base de conhecimento para a "
+        "pergunta atual. Use-os como sua fonte de evidência. Se algum trecho "
+        "responder à pergunta, responda com base nele mesmo que a redação não "
+        "seja idêntica à pergunta.\n\n"
+        f"{contexto}\n"
+        "===== FIM DO CONTEXT_RAG ====="
     )

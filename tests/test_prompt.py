@@ -12,9 +12,11 @@ def _point_prompt_to(tmp_path, monkeypatch, content: str):
     pmod.load_system_prompt.cache_clear()
 
 
-def test_build_sem_chunks_retorna_base(tmp_path, monkeypatch):
+def test_build_sem_chunks_inclui_base_e_marca_ausencia(tmp_path, monkeypatch):
     _point_prompt_to(tmp_path, monkeypatch, "Voce e um assistente.")
-    assert pmod.build_system_prompt([]) == "Voce e um assistente."
+    out = pmod.build_system_prompt([])
+    assert out.startswith("Voce e um assistente.")
+    assert "nenhum documento recuperado" in out.lower()
 
 
 def test_build_com_chunks_injeta_contexto(tmp_path, monkeypatch):
@@ -22,4 +24,4 @@ def test_build_com_chunks_injeta_contexto(tmp_path, monkeypatch):
     out = pmod.build_system_prompt(["fato A", "fato B"])
     assert "BASE" in out
     assert "fato A" in out and "fato B" in out
-    assert "apenas o material" in out.lower()
+    assert "CONTEXT_RAG" in out
