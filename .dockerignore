@@ -1,0 +1,18 @@
+# Ambiente e dados que não devem entrar na imagem
+.venv
+.git
+.env
+chroma_db/
+rag/*.pdf
+rag/*.txt
+rag/*.md
+skills/
+__pycache__/
+*.py[oc]
+*.egg-info
+build/
+dist/
+wheels/
+docs/
+tests/
+semantic-review/

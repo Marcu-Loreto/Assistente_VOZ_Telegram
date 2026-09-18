@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    # Credenciais e configuração vêm do .env (não vai para a imagem).
+    env_file:
+      - .env
+    volumes:
+      # Base vetorial persistida fora do container (sobrevive a recriações).
+      - ./chroma_db:/app/chroma_db
+      # System prompt editável sem rebuild.
+      - ./prompt:/app/prompt
+      # Documentos-fonte (necessários apenas se rodar a ingestão no container).
+      - ./rag:/app/rag
+    restart: unless-stopped

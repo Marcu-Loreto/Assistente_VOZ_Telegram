@@ -29,6 +29,9 @@ dev = [
     "pytest>=9.1.1",
 ]
 
+# O torch CPU-only é instalado no Dockerfile (índice CPU do PyTorch), para manter
+# a imagem pequena. Em desenvolvimento local, o torch vem do índice padrão.
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]

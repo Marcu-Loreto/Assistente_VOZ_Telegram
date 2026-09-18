@@ -15,3 +15,9 @@ chroma_db/
 
 # Skills locais (superpowers) — não fazem parte do projeto
 skills/
+
+# Documentos-fonte da RAG (grandes; cada um usa os seus e roda a ingestão)
+rag/*.pdf
+rag/*.txt
+rag/*.md
+!rag/.gitkeep
