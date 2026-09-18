@@ -65,17 +65,20 @@ async def handle_voice(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     reply = await asyncio.to_thread(process_message, chat_id, user_text, memory)
 
-    # Se o processamento falhou, não vale gastar TTS narrando o erro: responde texto.
+    # Entrega o texto imediatamente (leitura na hora), e o áudio chega em seguida.
+    await update.message.reply_text(reply)
+
+    # Se o processamento falhou, não vale gastar TTS narrando o erro.
     if reply == ERRO_FALLBACK:
-        await update.message.reply_text(reply)
         return
 
+    # Sinaliza que está gerando o áudio e o envia quando pronto.
     try:
+        await ctx.bot.send_chat_action(chat_id, "record_voice")
         audio = await asyncio.to_thread(synthesize, reply)
         await update.message.reply_voice(voice=audio)
     except Exception:
-        logger.exception("Falha no TTS; caindo para texto")
-        await update.message.reply_text(reply)
+        logger.exception("Falha no TTS; o texto já foi enviado")
 
 
 def main() -> None:

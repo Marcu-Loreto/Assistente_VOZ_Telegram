@@ -1,4 +1,12 @@
+import os
 from functools import lru_cache
+
+# Usa apenas o cache local do modelo, sem consultar o HuggingFace Hub a cada uso.
+# Corta dezenas de requisições de rede por operação, reduzindo a latência do RAG.
+# Pré-requisito: o modelo já deve estar baixado (feito no primeiro uso local e
+# pré-baixado na imagem Docker). Definido antes de importar sentence-transformers.
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 from .config import get_settings
 
