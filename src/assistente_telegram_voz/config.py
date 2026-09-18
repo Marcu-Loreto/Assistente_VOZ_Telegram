@@ -51,7 +51,7 @@ def get_settings() -> Settings:
         llm_model=os.getenv("LLM_MODEL", "openai/gpt-5.6-luna"),
         openai_api_key=_req("OPENAI_API_KEY"),
         transcribe_model=os.getenv("TRANSCRIBE_MODEL", "gpt-4o-transcribe"),
-        embedding_model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"),
+        embedding_model=os.getenv("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"),
         elevenlabs_api_key=_req("ELEVENLABS_API_KEY"),
         elevenlabs_voice_id=_req("ELEVENLABS_VOICE_ID"),
         elevenlabs_model=os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2"),

@@ -1,16 +1,11 @@
 from functools import lru_cache
 
 import chromadb
-from openai import OpenAI
 
 from .config import get_settings
+from .embeddings import embed
 
 COLLECTION_NAME = "knowledge"
-
-
-@lru_cache(maxsize=1)
-def _openai_client() -> OpenAI:
-    return OpenAI(api_key=get_settings().openai_api_key)
 
 
 @lru_cache(maxsize=1)
@@ -22,9 +17,8 @@ def get_collection():
 
 
 def _embed(text: str) -> list[float]:
-    s = get_settings()
-    resp = _openai_client().embeddings.create(model=s.embedding_model, input=text)
-    return resp.data[0].embedding
+    """Embedding local de um único texto."""
+    return embed([text])[0]
 
 
 def retrieve(query: str, k: int | None = None) -> list[str]:

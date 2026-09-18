@@ -1,17 +1,17 @@
-from unittest.mock import MagicMock
-
 from scripts import ingest
 
 
-def test_embed_batch_uma_chamada_para_varios_textos():
-    fake_client = MagicMock()
-    fake_client.embeddings.create.return_value = MagicMock(
-        data=[MagicMock(embedding=[0.1]), MagicMock(embedding=[0.2])]
-    )
-    out = ingest.embed_batch(["a", "b"], model="m", client=fake_client)
+def test_embed_batch_usa_embeddings_locais(monkeypatch):
+    chamadas = {}
+
+    def fake_embed(texts):
+        chamadas["texts"] = texts
+        return [[0.1], [0.2]]
+
+    monkeypatch.setattr(ingest, "embed", fake_embed)
+    out = ingest.embed_batch(["a", "b"])
     assert out == [[0.1], [0.2]]
-    # um único request para os dois textos, não um por texto
-    fake_client.embeddings.create.assert_called_once_with(model="m", input=["a", "b"])
+    assert chamadas["texts"] == ["a", "b"]
 
 
 def test_batched_divide_em_lotes():

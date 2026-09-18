@@ -11,7 +11,8 @@ from pathlib import Path
 from pypdf import PdfReader
 
 from assistente_telegram_voz.config import get_settings
-from assistente_telegram_voz.rag import _openai_client, get_collection
+from assistente_telegram_voz.embeddings import embed
+from assistente_telegram_voz.rag import get_collection
 
 
 def chunk_text(text: str, size: int = 1000, overlap: int = 150) -> list[str]:
@@ -49,10 +50,9 @@ def _batched(seq: list, size: int):
         yield seq[start : start + size]
 
 
-def embed_batch(texts: list[str], model: str, client) -> list[list[float]]:
-    """Gera embeddings para uma lista de textos numa única chamada à API."""
-    resp = client.embeddings.create(model=model, input=texts)
-    return [item.embedding for item in resp.data]
+def embed_batch(texts: list[str]) -> list[list[float]]:
+    """Gera embeddings locais para uma lista de textos (sem chamadas de rede)."""
+    return embed(texts)
 
 
 EMBED_BATCH_SIZE = 128
@@ -62,7 +62,6 @@ UPSERT_BATCH_SIZE = 512
 def main() -> None:
     s = get_settings()
     collection = get_collection()
-    client = _openai_client()
     documents = read_documents(s.rag_dir)
 
     # Achata todos os documentos em chunks com seus ids e metadados.
@@ -80,7 +79,7 @@ def main() -> None:
     # Embeddings em lote (uma chamada por lote, não por chunk).
     embeddings: list[list[float]] = []
     for batch in _batched(texts, EMBED_BATCH_SIZE):
-        embeddings.extend(embed_batch(batch, s.embedding_model, client))
+        embeddings.extend(embed_batch(batch))
         print(f"  embeddings gerados: {len(embeddings)}/{len(texts)}")
 
     # Upsert em lote no ChromaDB.
