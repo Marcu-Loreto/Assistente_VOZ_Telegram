@@ -22,6 +22,12 @@ def _int(name: str, default: int) -> int:
         raise ValueError(f"Variável {name} deve ser um inteiro, recebido: {raw!r}") from e
 
 
+def _csv_list(name: str, default: str = "") -> tuple[str, ...]:
+    """Lê uma variável com itens separados por vírgula (ex.: 'a, b, c')."""
+    raw = os.getenv(name, default)
+    return tuple(item.strip() for item in raw.split(",") if item.strip())
+
+
 @dataclass(frozen=True)
 class Settings:
     telegram_bot_token: str
@@ -43,7 +49,7 @@ class Settings:
     system_prompt_path: str
     history_max_messages: int
     max_audio_seconds: int
-    log_file: str
+    rag_admin_users: tuple[str, ...]
 
 
 @lru_cache(maxsize=1)
@@ -68,5 +74,5 @@ def get_settings() -> Settings:
         system_prompt_path=os.getenv("SYSTEM_PROMPT_PATH", "prompt/system.md"),
         history_max_messages=_int("HISTORY_MAX_MESSAGES", 10),
         max_audio_seconds=_int("MAX_AUDIO_SECONDS", 120),
-        log_file=os.getenv("LOG_FILE", ""),
+        rag_admin_users=_csv_list("RAG_ADMIN_USERS"),
     )

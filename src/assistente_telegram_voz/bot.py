@@ -141,23 +141,19 @@ async def handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(reply)
 
 
-def _setup_logging(log_file: str) -> None:
-    """Configura o logging. Se LOG_FILE estiver definido, grava no arquivo além
-    do terminal (assim os logs ficam registrados para análise posterior)."""
-    handlers: list[logging.Handler] = [logging.StreamHandler()]
-    if log_file:
-        from pathlib import Path
+def _setup_logging() -> None:
+    """Configura o logging apenas no terminal.
 
-        path = Path(log_file)
-        if path.parent != Path("."):
-            path.parent.mkdir(parents=True, exist_ok=True)
-        handlers.append(logging.FileHandler(path, encoding="utf-8"))
-    logging.basicConfig(level=logging.INFO, handlers=handlers)
+    Silencia o logger do httpx (nível WARNING): em INFO ele imprime a URL de cada
+    request ao Telegram, e essa URL embute o token do bot em texto claro. Sem isso,
+    o token vazaria nos logs a cada chamada de polling."""
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def main() -> None:
     s = get_settings()
-    _setup_logging(s.log_file)
+    _setup_logging()
     app = Application.builder().token(s.telegram_bot_token).build()
     app.bot_data["memory"] = ConversationMemory(max_messages=s.history_max_messages)
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))

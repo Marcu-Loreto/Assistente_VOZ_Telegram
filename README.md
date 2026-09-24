@@ -49,17 +49,32 @@ uv run python -m scripts.ingest
 Rode novamente sempre que adicionar ou alterar documentos em `rag/`. O primeiro uso
 baixa o modelo de embeddings (uma vez).
 
-#### Frontend de upload (opcional)
+#### Frontend de gestão do RAG (opcional)
 
 Em vez de copiar arquivos manualmente para `rag/`, você pode usar a interface web
-para enviar documentos. Ela aceita `.txt`, `.md`, `.docx`, `.csv`, `.xlsx`, `.pdf`
-e imagens (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`), converte cada um para
-Markdown (formato limpo que facilita o embedding), salva em `rag/` e, se você marcar
-a opção, já dispara a reindexação:
+para gerenciar a base:
 
 ```bash
 uv run streamlit run app.py
 ```
+
+O acesso é protegido por um **login simples** (sem senha — é uma POC): informe um
+usuário presente em `RAG_ADMIN_USERS` no `.env` (lista separada por vírgula, ex.:
+`RAG_ADMIN_USERS=marcu,admin`). O login serve só para separar a gestão do uso comum.
+
+> **Aviso:** login sem senha não protege de verdade. Use apenas localmente; não
+> exponha esse frontend na internet sem uma autenticação real.
+
+Depois de entrar, há duas páginas:
+
+- **Adicionar documentos:** aceita `.txt`, `.md`, `.docx`, `.csv`, `.xlsx`, `.pdf`
+  e imagens (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`), converte cada um
+  para Markdown (formato limpo que facilita o embedding), salva em `rag/` e, se
+  você marcar a opção, já dispara a reindexação.
+- **Gerenciar base:** lista os documentos indexados no banco vetorial (ChromaDB)
+  com a contagem de trechos de cada um, aponta arquivos que estão em `rag/` mas
+  ainda não foram indexados, e permite **excluir** um documento — removendo os
+  trechos do banco e, opcionalmente, o arquivo de origem em disco (com confirmação).
 
 A conversão fica na classe `DocumentConverter` (`src/assistente_telegram_voz/converter.py`),
 que também pode ser usada por código:
@@ -137,7 +152,7 @@ uv run pytest
 prompt/agente.md   # system prompt do assistente (editável; escopo, tom, guardrails)
 rag/               # documentos-fonte da base de conhecimento (não versionados)
 chroma_db/         # índice vetorial gerado (não versionado)
-app.py             # frontend Streamlit para upload e conversão de documentos
+app.py             # frontend Streamlit: gestão do RAG (upload + listar/excluir) com login
 scripts/ingest.py  # ingestão: lê rag/, gera embeddings e popula o ChromaDB
 src/assistente_telegram_voz/
   config.py        # carrega e valida o .env
@@ -145,7 +160,7 @@ src/assistente_telegram_voz/
   image.py         # interpreta imagens + OCR via modelo de visão (OpenRouter)
   memory.py        # histórico de conversa por chat (em RAM)
   prompt.py        # monta o system prompt + contexto recuperado (CONTEXT_RAG)
-  rag.py           # busca trechos relevantes no ChromaDB
+  rag.py           # busca trechos no ChromaDB + gestão (listar/excluir documentos)
   embeddings.py    # embeddings locais (sentence-transformers)
   transcribe.py    # áudio -> texto (OpenAI)
   tts.py           # texto -> áudio (ElevenLabs)
