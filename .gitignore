@@ -13,6 +13,12 @@ wheels/
 # RAG vector store (dados gerados pela ingestão)
 chroma_db/
 
+# Logs (podem conter o token do bot em texto claro nas URLs do httpx)
+logs/
+
+# Relatórios de code review (artefato de processo, não faz parte do projeto)
+semantic-review/
+
 # Skills locais (superpowers) — não fazem parte do projeto
 skills/
 

@@ -30,6 +30,9 @@ class Settings:
     llm_model: str
     openai_api_key: str
     transcribe_model: str
+    vision_model: str
+    vision_max_image_px: int
+    vision_image_quality: int
     embedding_model: str
     elevenlabs_api_key: str
     elevenlabs_voice_id: str
@@ -40,6 +43,7 @@ class Settings:
     system_prompt_path: str
     history_max_messages: int
     max_audio_seconds: int
+    log_file: str
 
 
 @lru_cache(maxsize=1)
@@ -51,6 +55,9 @@ def get_settings() -> Settings:
         llm_model=os.getenv("LLM_MODEL", "openai/gpt-5.6-luna"),
         openai_api_key=_req("OPENAI_API_KEY"),
         transcribe_model=os.getenv("TRANSCRIBE_MODEL", "gpt-4o-transcribe"),
+        vision_model=os.getenv("VISION_MODEL", "openai/gpt-4o-mini"),
+        vision_max_image_px=_int("VISION_MAX_IMAGE_PX", 1536),
+        vision_image_quality=_int("VISION_IMAGE_QUALITY", 85),
         embedding_model=os.getenv("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"),
         elevenlabs_api_key=_req("ELEVENLABS_API_KEY"),
         elevenlabs_voice_id=_req("ELEVENLABS_VOICE_ID"),
@@ -61,4 +68,5 @@ def get_settings() -> Settings:
         system_prompt_path=os.getenv("SYSTEM_PROMPT_PATH", "prompt/system.md"),
         history_max_messages=_int("HISTORY_MAX_MESSAGES", 10),
         max_audio_seconds=_int("MAX_AUDIO_SECONDS", 120),
+        log_file=os.getenv("LOG_FILE", ""),
     )

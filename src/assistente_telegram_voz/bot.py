@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import Application, ContextTypes, MessageHandler, filters
 
 from .config import get_settings
+from .image import describe_image
 from .llm import generate
 from .memory import ConversationMemory
 from .prompt import build_system_prompt
@@ -17,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 ERRO_FALLBACK = "Tive um problema ao processar sua mensagem. Pode tentar de novo?"
 AUDIO_LONGO = "Esse áudio é muito longo. Envie um menor, por favor."
+
+# Instrução padrão quando a foto vem sem legenda: comportamento "explique a imagem".
+LEGENDA_PADRAO = "Explique a imagem a seguir."
 
 
 def process_message(chat_id: int, user_text: str, memory: ConversationMemory) -> str:
@@ -31,6 +35,43 @@ def process_message(chat_id: int, user_text: str, memory: ConversationMemory) ->
         return reply
     except Exception:
         logger.exception("Falha ao processar mensagem")
+        return ERRO_FALLBACK
+
+
+def process_image_message(
+    chat_id: int, image_bytes: bytes, mime: str, caption: str, memory: ConversationMemory
+) -> str:
+    """Interpreta a imagem (visão + OCR) e responde seguindo a instrução do usuário.
+
+    A legenda do usuário guia a saída (ex.: "resuma", "só o texto", "traduza"). Sem
+    legenda, usa a instrução padrão de explicar a imagem. O conteúdo visual entra
+    como contexto e o RAG é feito sobre a instrução do usuário. Nunca levanta
+    exceção — devolve o texto de fallback em caso de erro.
+    """
+    try:
+        instrucao = (caption or "").strip() or LEGENDA_PADRAO
+        # Extrai descrição + OCR da imagem (faz o pré-processamento internamente).
+        conteudo_visual = describe_image(image_bytes, mime)
+
+        # RAG a partir da instrução do usuário (não do dump da imagem).
+        chunks = retrieve(instrucao)
+        system = build_system_prompt(chunks)
+        history = memory.get_history(chat_id)
+
+        user_msg = (
+            f"{instrucao}\n\n"
+            "===== CONTEUDO DA IMAGEM (interpretação + OCR) =====\n"
+            f"{conteudo_visual}\n"
+            "===== FIM DO CONTEUDO DA IMAGEM ====="
+        )
+        reply = generate(system=system, history=history, user_msg=user_msg)
+
+        # Guarda na memória o que o usuário pediu e a resposta, mantendo o contexto.
+        memory.append(chat_id, "user", f"[imagem] {instrucao}")
+        memory.append(chat_id, "assistant", reply)
+        return reply
+    except Exception:
+        logger.exception("Falha ao processar imagem")
         return ERRO_FALLBACK
 
 
@@ -81,12 +122,46 @@ async def handle_voice(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         logger.exception("Falha no TTS; o texto já foi enviado")
 
 
+async def handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    memory: ConversationMemory = ctx.application.bot_data["memory"]
+    chat_id = update.effective_chat.id
+
+    await ctx.bot.send_chat_action(chat_id, "typing")
+
+    # A foto vem em várias resoluções; a última é a de maior qualidade.
+    photo = update.message.photo[-1]
+    tg_file = await photo.get_file()
+    image_bytes = bytes(await tg_file.download_as_bytearray())
+
+    # Fotos do Telegram são reenviadas como JPEG; o pré-processamento normaliza depois.
+    caption = update.message.caption or ""
+    reply = await asyncio.to_thread(
+        process_image_message, chat_id, image_bytes, "image/jpeg", caption, memory
+    )
+    await update.message.reply_text(reply)
+
+
+def _setup_logging(log_file: str) -> None:
+    """Configura o logging. Se LOG_FILE estiver definido, grava no arquivo além
+    do terminal (assim os logs ficam registrados para análise posterior)."""
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    if log_file:
+        from pathlib import Path
+
+        path = Path(log_file)
+        if path.parent != Path("."):
+            path.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(path, encoding="utf-8"))
+    logging.basicConfig(level=logging.INFO, handlers=handlers)
+
+
 def main() -> None:
-    logging.basicConfig(level=logging.INFO)
     s = get_settings()
+    _setup_logging(s.log_file)
     app = Application.builder().token(s.telegram_bot_token).build()
     app.bot_data["memory"] = ConversationMemory(max_messages=s.history_max_messages)
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     logger.info("Bot iniciado. Polling...")
     app.run_polling()

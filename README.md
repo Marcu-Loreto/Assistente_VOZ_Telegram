@@ -38,7 +38,8 @@ OpenAI (usada só para transcrição de voz) e ElevenLabs. O `.env` não é vers
 
 ### 3. Alimentar a base de conhecimento
 
-Coloque seus documentos (`.md`, `.txt`, `.pdf`) na pasta `rag/` e rode a ingestão,
+Coloque seus documentos (`.md`, `.txt`, `.pdf`) na pasta `rag/` e rode a ingestão
+(ou use o frontend de upload descrito abaixo, que aceita mais formatos),
 que fatia os textos, gera os embeddings localmente e popula o ChromaDB:
 
 ```bash
@@ -47,6 +48,44 @@ uv run python -m scripts.ingest
 
 Rode novamente sempre que adicionar ou alterar documentos em `rag/`. O primeiro uso
 baixa o modelo de embeddings (uma vez).
+
+#### Frontend de upload (opcional)
+
+Em vez de copiar arquivos manualmente para `rag/`, você pode usar a interface web
+para enviar documentos. Ela aceita `.txt`, `.md`, `.docx`, `.csv`, `.xlsx`, `.pdf`
+e imagens (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`), converte cada um para
+Markdown (formato limpo que facilita o embedding), salva em `rag/` e, se você marcar
+a opção, já dispara a reindexação:
+
+```bash
+uv run streamlit run app.py
+```
+
+A conversão fica na classe `DocumentConverter` (`src/assistente_telegram_voz/converter.py`),
+que também pode ser usada por código:
+
+```python
+from assistente_telegram_voz.converter import DocumentConverter
+
+conv = DocumentConverter()
+conv.convert_file("relatorio.docx", out_dir="rag")   # gera rag/relatorio.md
+```
+
+**Imagens:** quando o arquivo é uma imagem, o conversor não tenta ler texto direto —
+ele envia a imagem a um modelo de visão (via OpenRouter) que **descreve o conteúdo**
+e faz **OCR** do texto embutido, retornando um Markdown com as duas seções. O modelo
+é configurável pela variável `VISION_MODEL` no `.env` (padrão `openai/gpt-4o-mini`) e
+usa a mesma `OPENROUTER_API_KEY` do assistente. Diferente dos outros formatos, essa
+conversão faz uma chamada de rede e depende de crédito/modelo multimodal disponível.
+
+Antes de enviar, a imagem passa por um **pré-processamento** (via Pillow) que a
+redimensiona e recomprime para reduzir custo e latência, sem perder legibilidade do
+texto. Dá para ajustar no `.env`:
+
+- `VISION_MAX_IMAGE_PX` (padrão `1536`) — maior lado permitido; imagens maiores são
+  reduzidas mantendo a proporção.
+- `VISION_IMAGE_QUALITY` (padrão `85`) — qualidade JPEG (1–95) usada ao recomprimir
+  imagens sem transparência (imagens com transparência viram PNG).
 
 ### 4. Personalizar o assistente (opcional)
 
@@ -98,9 +137,12 @@ uv run pytest
 prompt/agente.md   # system prompt do assistente (editável; escopo, tom, guardrails)
 rag/               # documentos-fonte da base de conhecimento (não versionados)
 chroma_db/         # índice vetorial gerado (não versionado)
+app.py             # frontend Streamlit para upload e conversão de documentos
 scripts/ingest.py  # ingestão: lê rag/, gera embeddings e popula o ChromaDB
 src/assistente_telegram_voz/
   config.py        # carrega e valida o .env
+  converter.py     # converte .txt/.docx/.csv/.xlsx/.pdf/imagens -> .md (DocumentConverter)
+  image.py         # interpreta imagens + OCR via modelo de visão (OpenRouter)
   memory.py        # histórico de conversa por chat (em RAM)
   prompt.py        # monta o system prompt + contexto recuperado (CONTEXT_RAG)
   rag.py           # busca trechos relevantes no ChromaDB
