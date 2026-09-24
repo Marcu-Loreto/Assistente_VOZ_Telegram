@@ -10,6 +10,17 @@ base não cobre a pergunta, avisa que não encontrou a informação em vez de in
 O comportamento, o tom e os guardrails ficam no arquivo de prompt e podem ser
 editados sem mexer no código.
 
+## Arquitetura
+
+Dois processos independentes compartilham a mesma base de conhecimento (ChromaDB)
+e o mesmo system prompt: o **bot do Telegram** (runtime em polling, atende texto,
+voz e imagem) e o **frontend Streamlit** (`app.py`), usado para gerir o RAG. A
+ingestão (`scripts/ingest.py`) popula a base a partir da pasta `rag/`.
+
+![Arquitetura do projeto: bot do Telegram, frontend Streamlit e RAG com ChromaDB](docs/img/arquitetura.png)
+
+O diagrama editável (Mermaid) fica em [`docs/arquitetura.md`](docs/arquitetura.md).
+
 ## Componentes
 
 - **Cérebro (LLM):** `gpt-5.6-luna` via OpenRouter
