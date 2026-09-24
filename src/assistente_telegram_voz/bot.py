@@ -11,7 +11,7 @@ from .llm import generate
 from .memory import ConversationMemory
 from .prompt import build_system_prompt
 from .rag import retrieve
-from .transcribe import transcribe
+from .stt import transcribe
 from .tts import synthesize
 
 logger = logging.getLogger(__name__)

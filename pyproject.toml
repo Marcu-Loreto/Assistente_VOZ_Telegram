@@ -17,9 +17,17 @@ dependencies = [
     "python-docx>=1.1.2",
     "python-dotenv>=1.2.3",
     "python-telegram-bot>=22.8",
+    "requests>=2.32.0",
     "sentence-transformers>=6.0.1",
     "streamlit>=1.40.0",
     "torch>=2.14.0",
+]
+
+[project.optional-dependencies]
+# ffmpeg empacotado (para o provedor CPQD, que converte áudio). Alternativa: ter
+# o ffmpeg instalado no sistema e apontar FFMPEG_BINARY.
+cpqd = [
+    "imageio-ffmpeg>=0.5.1",
 ]
 
 [project.scripts]

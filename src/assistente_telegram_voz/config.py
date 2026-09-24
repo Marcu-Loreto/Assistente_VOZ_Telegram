@@ -40,6 +40,8 @@ class Settings:
     vision_max_image_px: int
     vision_image_quality: int
     embedding_model: str
+    stt_provider: str
+    tts_provider: str
     elevenlabs_api_key: str
     elevenlabs_voice_id: str
     elevenlabs_model: str
@@ -65,8 +67,12 @@ def get_settings() -> Settings:
         vision_max_image_px=_int("VISION_MAX_IMAGE_PX", 1536),
         vision_image_quality=_int("VISION_IMAGE_QUALITY", 85),
         embedding_model=os.getenv("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"),
-        elevenlabs_api_key=_req("ELEVENLABS_API_KEY"),
-        elevenlabs_voice_id=_req("ELEVENLABS_VOICE_ID"),
+        # Seletores de provedor (cada um valida suas credenciais quando é usado).
+        stt_provider=os.getenv("STT_PROVIDER", "openai").strip().lower(),
+        tts_provider=os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower(),
+        # ElevenLabs deixou de ser obrigatório: só é exigido se TTS_PROVIDER=elevenlabs.
+        elevenlabs_api_key=os.getenv("ELEVENLABS_API_KEY", ""),
+        elevenlabs_voice_id=os.getenv("ELEVENLABS_VOICE_ID", ""),
         elevenlabs_model=os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2"),
         rag_dir=os.getenv("RAG_DIR", "rag"),
         chroma_dir=os.getenv("CHROMA_DIR", "chroma_db"),

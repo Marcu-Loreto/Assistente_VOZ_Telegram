@@ -1,22 +1,9 @@
-from functools import lru_cache
+"""Compatibilidade: `transcribe` agora vive no pacote `stt` (seleção de provedor).
 
-from openai import OpenAI
+Mantido para não quebrar imports antigos. Novos usos devem importar de
+`assistente_telegram_voz.stt`.
+"""
 
-from .config import get_settings
+from .stt import transcribe
 
-
-@lru_cache(maxsize=1)
-def _client() -> OpenAI:
-    return OpenAI(api_key=get_settings().openai_api_key)
-
-
-def transcribe(audio_path: str) -> str:
-    """Transcreve um arquivo de áudio para texto usando o modelo de transcrição."""
-    s = get_settings()
-    with open(audio_path, "rb") as f:
-        resp = _client().audio.transcriptions.create(
-            model=s.transcribe_model,
-            file=f,
-            language="pt",
-        )
-    return resp.text.strip()
+__all__ = ["transcribe"]
